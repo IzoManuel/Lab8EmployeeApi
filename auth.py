@@ -12,13 +12,14 @@ bp = Blueprint("auth", __name__)
 def register():
     try:
         data = request.json
+        print(f"DATA: {data}")
         username = data['username']
         email = data['email']
         phone = data['phone']
         password = data['password']
         confirm_password = data['confirm_password']
 
-        if len(password) < 8:
+        if len(password) < 4:
             raise Exception("Password must be at least 8 characters long")
         elif password != confirm_password:
             raise Exception("Passwords do not match")
@@ -34,14 +35,21 @@ def register():
         cursor.execute(sql, (username, email, phone, password_hash))
         connection.commit()
 
+        access_token = create_access_token(identity=username)
         return jsonify({
-            "message": "Registration successful"
+            "message": "Registration successful",
+            "access_token": access_token,
+            "username": username
         })
 
     except Exception as e:
-        return jsonify ({
+        connection.rollback()
+        response = jsonify ({
             "error": str(e)
         })
+        response.status_code = 400
+
+        return response
 
 # User login endpoint
 @bp.route('/login', methods=['POST'])
@@ -68,23 +76,28 @@ def login():
         access_token = create_access_token(identity=username)
         return jsonify({
             "message": "Login successful",
-            "access_token": access_token
+            "access_token": access_token,
+            "username": username
         })
 
     except Exception as e:
-        return jsonify ({
+        connection.rollback()
+        response = jsonify ({
             "error": str(e)
         })
+        response.status_code = 400
 
-@bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    try:
-        unset_jwt_cookies(response)
+        return response
+
+# @bp.route('/logout', methods=['POST'])
+# @jwt_required()
+# def logout():
+#     try:
+#         unset_jwt_cookies(response)
         
-        return jsonify({"message": "Logout successful"})
-    except Exception as e:
-        return jsonify({"message": "Logout failed", "error": str(e)})
+#         return jsonify({"message": "Logout successful"})
+#     except Exception as e:
+#         return jsonify({"message": "Logout failed", "error": str(e)})
 
 @bp.route('/protected', methods=['GET'])
 @jwt_required()

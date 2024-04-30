@@ -5,6 +5,3 @@ def get_connection():
         host='localhost', user='root', password='', database='israel_chatu_emp_db')
 
     return connection
-
-def validate_image():
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

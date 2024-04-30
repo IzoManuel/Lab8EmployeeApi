@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import auth
 from utils import get_connection
+import logging
 from flask_jwt_extended import jwt_required
 
 bp = Blueprint('employee', __name__)
@@ -15,12 +16,13 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 class Employee(Resource):
     def get(self):
-        connection = get_connection()
-        cursor = connection.cursor(pymysql.cursors.DictCursor)
-
-        sql = "SELECT * FROM employees ORDER BY created_at DESC"
-
         try:
+            connection = get_connection()
+            cursor = connection.cursor(pymysql.cursors.DictCursor)
+
+            sql = "SELECT * FROM employees ORDER BY created_at DESC"
+
+
             cursor.execute(sql)
 
             if cursor.rowcount == 0:
@@ -47,7 +49,7 @@ class Employee(Resource):
     def post(self):
         try:
             data = request.form.to_dict()
-
+            print(f"DATA: {data}")
             id_number = data["id_number"]
             username = data["username"]
             others = data["others"]
@@ -80,15 +82,18 @@ class Employee(Resource):
 
             os.makedirs('static/images/', exist_ok=True)
             employee_image.save('static/images/' + employee_image_name)
-
+            logging.info(f"LOGGING")
             return jsonify({
                 "message": "Employee created successfully"
             })
         except Exception as e:
-            return jsonify({
+            print(f"ERROR: {e}")
+            response = jsonify({
                 "message": "Employee creation failed",
                 "error": str(e)
             })
+            response.status_code = 422
+            return response
 
     def allowed_file(self, filename):
         return '.' in filename and \
@@ -96,17 +101,18 @@ class Employee(Resource):
 
     @jwt_required()
     def put(self):
-        data = request.json
-
-        id_number = data["id_number"]
-        salary = data["salary"]
-
-        connection = get_connection()
-        cursor = connection.cursor()
-
-        sql = "UPDATE employees SET salary = %s WHERE id_number = %s"
-
         try:
+            data = request.json
+
+            id_number = data["id_number"]
+            salary = data["salary"]
+
+            connection = get_connection()
+            cursor = connection.cursor()
+
+            sql = "UPDATE employees SET salary = %s WHERE id_number = %s"
+
+      
             cursor.execute(sql, (salary, id_number))
             connection.commit()
             return jsonify({
@@ -127,7 +133,6 @@ class Employee(Resource):
             connection = get_connection()
             cursor = connection.cursor(pymysql.cursors.DictCursor)
 
-        
             # Retrieve the employee's image name from the database
             sql_select_image = "SELECT employee_image_name FROM employees WHERE id_number = %s"
             cursor.execute(sql_select_image, id_number)

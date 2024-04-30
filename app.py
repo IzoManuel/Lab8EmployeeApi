@@ -5,17 +5,22 @@ from employee import Employee
 import auth
 from utils import get_connection
 from werkzeug.utils import secure_filename
+
 from flask_jwt_extended import JWTManager, jwt_required
 from datetime import timedelta
+import auth
+
 
 app = Flask(__name__)
 
-app.register_blueprint(auth.bp)
+
 app.register_blueprint(employee.bp)
 
+app.register_blueprint(auth.bp)
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'secret_key'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
+
 
 api = Api(app)
 
